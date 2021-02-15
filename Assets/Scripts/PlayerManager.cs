@@ -25,6 +25,8 @@ public class PlayerManager : MonoBehaviour
     void Start()
     {
         kartServer = GameObject.Find("NetServer").GetComponent<KartServer>();
+        kartServer.playerManager = this;
+
         myPlayer = kartServer.peers[0];
         //player prefab
         myPlayer.prefab = Instantiate(kartPrefab);
@@ -54,13 +56,14 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    void UpdatePosition(string playerID, Transform trans)
+    public void UpdatePosition(string playerID, Vector3 position, Vector3 rotation)
     {
         for (int i = 0; i < kartServer.peers.Count; i++) // TODO: use connectionID as index to update prefab position
         {
             if (kartServer.peers[i].playerID == playerID) 
             {
-                kartServer.peers[i].prefab.transform.position = trans.position;
+                kartServer.peers[i].prefab.transform.position = position;
+                kartServer.peers[i].prefab.transform.eulerAngles = rotation;
                 return;
             }
         }

@@ -29,11 +29,12 @@ public class GamePacket
     public string playerID { get; set; }
     public string time { get; set; }
     // player information
-    public Position playerPosition;
+    public Vector3 playerPosition;
+    public Vector3 playerRotation;
     public int p_HP { get; set;}
        
      // attack information
-    public Position attackPosition;
+    public Vector3 attackPosition;
 
     public GamePacket () {
         gameEvent = "";
@@ -41,8 +42,8 @@ public class GamePacket
         playerID = "sudoID";
         p_HP = 5;
         time = System.DateTime.Now.ToString("HH:mm:ss");
-        playerPosition = new Position(0,0,0);
-        attackPosition = new Position(0,0,0);
+        playerPosition = new Vector3(0,0,0);
+        attackPosition = new Vector3(0,0,0);
     }
 
     public ByteBuffer GetBuffer() {
@@ -59,9 +60,13 @@ public class GamePacket
         buffer.WriteFloat(playerPosition.x);
         buffer.WriteFloat(playerPosition.y);
         buffer.WriteFloat(playerPosition.z);
+        buffer.WriteFloat(playerRotation.x);
+        buffer.WriteFloat(playerRotation.y);
+        buffer.WriteFloat(playerRotation.z);
         buffer.WriteFloat(attackPosition.x);
-        buffer.WriteFloat(attackPosition.x);
-        buffer.WriteFloat(attackPosition.x);
+        buffer.WriteFloat(attackPosition.y);
+        buffer.WriteFloat(attackPosition.z);
+        debugMsg();
         return buffer;
     }
 
@@ -83,12 +88,17 @@ public class GamePacket
         x = byteBuffer.ReadFloat();
         y = byteBuffer.ReadFloat();
         z = byteBuffer.ReadFloat();
-        playerPosition = new Position(x,y,z);
+        playerPosition = new Vector3(x,y,z);
 
         x = byteBuffer.ReadFloat();
         y = byteBuffer.ReadFloat();
         z = byteBuffer.ReadFloat();
-        attackPosition = new Position(x,y,z);
+        playerRotation = new Vector3(x,y,z);
+
+        x = byteBuffer.ReadFloat();
+        y = byteBuffer.ReadFloat();
+        z = byteBuffer.ReadFloat();
+        attackPosition = new Vector3(x,y,z);
 
         if (print) {
             debugMsg();
@@ -103,6 +113,7 @@ public class GamePacket
             + ", p_HP:" + p_HP
             + ", time:" + time
             + ", playerPosition:(" + playerPosition.x + ", " + playerPosition.y + ", " + playerPosition.z + ")"
+            + ", playerRotation:(" + playerRotation.x + ", " + playerRotation.y + ", " + playerRotation.z + ")"
             + ", attackPosition:(" + attackPosition.x + ", " +attackPosition.y + ", " + attackPosition.z + ")");
         
     }

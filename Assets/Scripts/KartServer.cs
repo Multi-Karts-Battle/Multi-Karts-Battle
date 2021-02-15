@@ -205,9 +205,10 @@ public class KartServer : MonoBehaviour {
                 break;
             case "PosInfo":
                 Debug.Log("peers Count:" + peers.Count);
-                peers[outConnectionId].prefab.transform.position = new Vector3(packet.playerPosition.x, packet.playerPosition.y, packet.playerPosition.z);
+                // peers[outConnectionId].prefab.transform.position = new Vector3(packet.playerPosition.x, packet.playerPosition.y, packet.playerPosition.z);
                 string tmp = "( " + packet.playerPosition.x + "," + packet.playerPosition.y + "," + packet.playerPosition.z +") ";
                 Debug.Log("PosInfo :" + tmp);
+                playerManager.UpdatePosition(packet.playerID, packet.playerPosition, packet.playerRotation);
                 break;
         }
     }
@@ -262,9 +263,13 @@ public class KartServer : MonoBehaviour {
     {
         GamePacket packet = new GamePacket();
         packet.gameEvent = "PosInfo";
+        packet.playerID = playerID;
         packet.playerPosition.x = trans.position.x;
         packet.playerPosition.y = trans.position.y;
         packet.playerPosition.z = trans.position.z;
+        packet.playerRotation.x = trans.eulerAngles.x;
+        packet.playerRotation.y = trans.eulerAngles.y;
+        packet.playerRotation.z = trans.eulerAngles.z;
         return packet;
     }
 
