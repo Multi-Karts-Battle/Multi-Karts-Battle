@@ -43,7 +43,9 @@ public class KartServer : MonoBehaviour {
     private HostTopology topo;
 
     private string myPlayerID = "";
-    private List<Player> peers = new List<Player>(MAX_CONNECTION);
+    public List<Player> peers = new List<Player>(MAX_CONNECTION);
+
+    public PlayerManager playerManager;
 
     private void Start() {
         // network init and config
@@ -52,6 +54,7 @@ public class KartServer : MonoBehaviour {
         reliableChannel = cc.AddChannel(QosType.Reliable);
         unreliableChannel = cc.AddChannel(QosType.Unreliable);
         topo = new HostTopology(cc, MAX_CONNECTION);
+        // playerManager =  GameObject.Find("Player").GetComponent<PlayerManager>();
     }
 
     /**
@@ -116,12 +119,11 @@ public class KartServer : MonoBehaviour {
         hostPlayer.connectionID = 0;
         peers.Add(hostPlayer);
 
-        isStarted = true;        
+        isStarted = true;    
     }
 
     private void Update()
-    {
-        
+    {        
         if (!isStarted) {
             return;
         }
@@ -201,15 +203,22 @@ public class KartServer : MonoBehaviour {
                     sendDataToPeers(packet, outConnectionId);
                 }
                 break;
+            case "PosInfo":
+                Debug.Log("peers Count:" + peers.Count);
+                peers[outConnectionId].prefab.transform.position = new Vector3(packet.playerPosition.x, packet.playerPosition.y, packet.playerPosition.z);
+                string tmp = "( " + packet.playerPosition.x + "," + packet.playerPosition.y + "," + packet.playerPosition.z +") ";
+                Debug.Log("PosInfo :" + tmp);
+                break;
         }
     }
 
-    private void sendData(GamePacket packet, int connectionID) {
+    public void sendData(GamePacket packet, int connectionID, bool reliable = true) {
         ByteBuffer byteBuffer = packet.GetBuffer();
         byte[] buffer = byteBuffer.ToArray();
         int bufferSize = byteBuffer.Length();
         byte error;
-        NetworkTransport.Send(myHostId, connectionID, reliableChannel, buffer, bufferSize, out error);
+        int channelID = reliable? reliableChannel : unreliableChannel;
+        NetworkTransport.Send(myHostId, connectionID, channelID, buffer, bufferSize, out error);
         if ((NetworkError)error != NetworkError.Ok) {
             Debug.Log("Network error when sending data (error code) :" + error.ToString());
         }
@@ -232,12 +241,30 @@ public class KartServer : MonoBehaviour {
         }
     }
 
-    private GamePacket packPeerInfo(string playerID, string IP, int port) 
+    private void connectToPeers() {
+        // client connect to other peers and save to peers[connectionID]
+        for (int i = 2; i < peers.Count; i++)
+        {
+            // TODO: reorganize topology
+        }
+    }
+
+    public GamePacket packPeerInfo(string playerID, string IP, int port) 
     {
         GamePacket packet = new GamePacket();
         packet.gameEvent = "PeerInfo";
         packet.playerID = playerID;
         packet.info = IP + "|" + port;
+        return packet;
+    }
+
+    public GamePacket packPeerPosition(string playerID, Transform trans) 
+    {
+        GamePacket packet = new GamePacket();
+        packet.gameEvent = "PosInfo";
+        packet.playerPosition.x = trans.position.x;
+        packet.playerPosition.y = trans.position.y;
+        packet.playerPosition.z = trans.position.z;
         return packet;
     }
 
@@ -248,7 +275,7 @@ public class KartServer : MonoBehaviour {
         string[] subs = packet.info.Split('|');
         player.IP = subs[0];
         player.port = int.Parse(subs[1]);
-
+        
         if (isServer && connectionID < peers.Count)
         {
             Debug.Log("Player " +player.playerID + " already added! Now we have " + peers.Count + " peers in the room!");
@@ -262,8 +289,8 @@ public class KartServer : MonoBehaviour {
         }
 
         Debug.Assert(!isServer || connectionID == peers.Count);
+        // player.prefab = playerManager.SpawnKart();
         peers.Add(player);
-
         Debug.Log("Player " +player.playerID + " joined! Now we have " + peers.Count + " peers in the room!");
         return true;
     }

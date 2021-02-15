@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/LobbyScene.unity
     guid: abda7708bfd233b41be3fd01f7e62a58
+  - enabled: 1
+    path: Assets/Scenes/Track.unity
+    guid: a9cb68ce863861d4f8ece48d1ee45c55
   m_configObjects: {}

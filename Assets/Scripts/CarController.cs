@@ -22,8 +22,6 @@ public class CarController : MonoBehaviour
     public ParticleSystem[] dustTrail;
     public float maxEmission = 25f;
     public float emissionRate;
-
-    public Cinemachine.CinemachineVirtualCamera vcam;
     
     // Start is called before the first frame update
     void Start()

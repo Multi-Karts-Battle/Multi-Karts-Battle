@@ -4,11 +4,11 @@ using UnityEngine;
 using UnityEngine.Networking;
 
 public class Position {
-    public int x;
-    public int y;
-    public int z;
+    public float x;
+    public float y;
+    public float z;
 
-    public Position(int x, int y, int z) {
+    public Position(float x, float y, float z) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -56,12 +56,12 @@ public class GamePacket
         time = System.DateTime.Now.ToString("HH:mm:ss");
         buffer.WriteString(time);
 
-        buffer.WriteInteger(playerPosition.x);
-        buffer.WriteInteger(playerPosition.y);
-        buffer.WriteInteger(playerPosition.z);
-        buffer.WriteInteger(attackPosition.x);
-        buffer.WriteInteger(attackPosition.x);
-        buffer.WriteInteger(attackPosition.x);
+        buffer.WriteFloat(playerPosition.x);
+        buffer.WriteFloat(playerPosition.y);
+        buffer.WriteFloat(playerPosition.z);
+        buffer.WriteFloat(attackPosition.x);
+        buffer.WriteFloat(attackPosition.x);
+        buffer.WriteFloat(attackPosition.x);
         return buffer;
     }
 
@@ -78,16 +78,16 @@ public class GamePacket
 
         time = byteBuffer.ReadString();
 
-        int x,y,z;
+        float x,y,z;
 
-        x = byteBuffer.ReadInteger();
-        y = byteBuffer.ReadInteger();
-        z = byteBuffer.ReadInteger();
+        x = byteBuffer.ReadFloat();
+        y = byteBuffer.ReadFloat();
+        z = byteBuffer.ReadFloat();
         playerPosition = new Position(x,y,z);
 
-        x = byteBuffer.ReadInteger();
-        y = byteBuffer.ReadInteger();
-        z = byteBuffer.ReadInteger();
+        x = byteBuffer.ReadFloat();
+        y = byteBuffer.ReadFloat();
+        z = byteBuffer.ReadFloat();
         attackPosition = new Position(x,y,z);
 
         if (print) {
