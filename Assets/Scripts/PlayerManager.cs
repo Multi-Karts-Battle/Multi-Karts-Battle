@@ -35,6 +35,7 @@ public class PlayerManager : MonoBehaviour
         for (int i = 1; i < kartServer.peers.Count; i++) {
             kartServer.peers[i].prefab = Instantiate(kartPrefab);
         }
+        kartServer.connectToPeers();
     }
 
     // Update is called once per frame
@@ -46,12 +47,13 @@ public class PlayerManager : MonoBehaviour
         if(Time.time >= nextUpdate)
         {
              // Change the next update (current second+1)
-             nextUpdate = Mathf.FloorToInt(Time.time) + (float)0.1;
+             nextUpdate = Mathf.FloorToInt(Time.time) + (float)0.2;
              // UpdateEverySecond();
              if (kartServer.peers.Count > 1)
             {
                 GamePacket pkt = kartServer.packPeerPosition(myPlayer.playerID, myPlayer.prefab.transform);
-                kartServer.sendData(pkt, 1, false);
+                // kartServer.sendData(pkt, 1, false);
+                kartServer.sendDataToPeers(pkt, 0, false);
             }
         }
     }

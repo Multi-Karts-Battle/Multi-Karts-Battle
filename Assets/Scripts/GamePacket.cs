@@ -66,7 +66,6 @@ public class GamePacket
         buffer.WriteFloat(attackPosition.x);
         buffer.WriteFloat(attackPosition.y);
         buffer.WriteFloat(attackPosition.z);
-        debugMsg();
         return buffer;
     }
 

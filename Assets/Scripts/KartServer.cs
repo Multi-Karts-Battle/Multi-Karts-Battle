@@ -88,9 +88,6 @@ public class KartServer : MonoBehaviour {
 
         if (isStarted)
         {
-            // if the connection is estabilished, we send peerInfo to server
-            GamePacket packet = packPeerInfo(myPlayerID, "127.0.0.1", clientPort);
-            sendData(packet, serverConnectionId);
             return;
         }
             
@@ -172,12 +169,18 @@ public class KartServer : MonoBehaviour {
         else 
         {
             Debug.Log("Received a new connection : hostId =" + outHostId + ", connectionId = "+ outConnectionId);
-            // server will notify the new peer of current peerInfo
-            for (int i = 0; i < peers.Count; i++) 
+             // ask info from new peer
+            GamePacket packet = packAskInfo();
+            sendData(packet, outConnectionId);
+            if (isServer)
             {
-                GamePacket packet = packPeerInfo(peers[i].playerID, peers[i].IP, peers[i].port);
-                sendData(packet, outConnectionId);
-            }
+                // server will notify the new peer of current peerInfo
+                for (int i = 0; i < peers.Count; i++) 
+                {
+                    packet = packPeerInfo(peers[i].playerID, peers[i].IP, peers[i].port);
+                    sendData(packet, outConnectionId);
+                }
+            }       
         }
     }
 
@@ -193,6 +196,10 @@ public class KartServer : MonoBehaviour {
         packet.GeneratePacket(buffer, true);
         switch (packet.gameEvent) 
         {
+            case "AskInfo":
+                packet = packPeerInfo(myPlayerID, "127.0.0.1", clientPort);
+                sendData(packet, outConnectionId);
+                break;
             case "PeerInfo": 
                 // Spawn player, this is usually happening after building connection
                 bool spawned = SpawnPlayer(packet, outConnectionId);
@@ -204,10 +211,6 @@ public class KartServer : MonoBehaviour {
                 }
                 break;
             case "PosInfo":
-                Debug.Log("peers Count:" + peers.Count);
-                // peers[outConnectionId].prefab.transform.position = new Vector3(packet.playerPosition.x, packet.playerPosition.y, packet.playerPosition.z);
-                string tmp = "( " + packet.playerPosition.x + "," + packet.playerPosition.y + "," + packet.playerPosition.z +") ";
-                Debug.Log("PosInfo :" + tmp);
                 playerManager.UpdatePosition(packet.playerID, packet.playerPosition, packet.playerRotation);
                 break;
         }
@@ -225,7 +228,7 @@ public class KartServer : MonoBehaviour {
         }
     }
 
-    private void sendDataToPeers(GamePacket packet, int exclusiveID = 0) {
+    public void sendDataToPeers(GamePacket packet, int exclusiveID = 0, bool reliable=true) {
         ByteBuffer byteBuffer = packet.GetBuffer();
         byte[] buffer = byteBuffer.ToArray();
         int bufferSize = byteBuffer.Length();
@@ -235,19 +238,34 @@ public class KartServer : MonoBehaviour {
             {
                 continue;
             }
-            NetworkTransport.Send(myHostId, i, reliableChannel, buffer, bufferSize, out error);
+            int channelID = reliable? reliableChannel : unreliableChannel;
+            NetworkTransport.Send(myHostId, peers[i].connectionID, channelID, buffer, bufferSize, out error);
             if ((NetworkError)error != NetworkError.Ok) {
                 Debug.Log("Network error when sending data to peers(error code) :" + error.ToString());
             }
         }
     }
 
-    private void connectToPeers() {
-        // client connect to other peers and save to peers[connectionID]
+    public void connectToPeers() {
+        // client connect to other peers
         for (int i = 2; i < peers.Count; i++)
         {
             // TODO: reorganize topology
+            if (peers[i].connectionID == -1)
+            {
+                peers[i].connectionID = NetworkTransport.Connect(myHostId, peers[i].IP, peers[i].port, 0, out error);
+                if ((NetworkError)error != NetworkError.Ok) {
+                    Debug.LogError("Network error when sending data (error code) :" + error.ToString());
+                }
+            }
         }
+    }
+
+    public GamePacket packAskInfo() 
+    {
+        GamePacket packet = new GamePacket();
+        packet.gameEvent = "AskInfo";
+        return packet;
     }
 
     public GamePacket packPeerInfo(string playerID, string IP, int port) 
@@ -273,28 +291,44 @@ public class KartServer : MonoBehaviour {
         return packet;
     }
 
+    private int findPlayer(Player player)
+    {
+        for (int i = 0; i < peers.Count; i++)
+        {
+            if (peers[i].IP == player.IP && peers[i].port == player.port && player.playerID == peers[i].playerID)
+                return i;
+        }
+        return -1;
+    }
+
     private bool SpawnPlayer(GamePacket packet, int connectionID) 
     {
         Player player = new Player();
         player.playerID = packet.playerID;
+        if (!isServer && peers.Count > 2) {
+            player.connectionID = -1;
+        } else {
+            player.connectionID = connectionID;
+        }            
         string[] subs = packet.info.Split('|');
         player.IP = subs[0];
         player.port = int.Parse(subs[1]);
+
+        int found = findPlayer(player);
         
-        if (isServer && connectionID < peers.Count)
+        if (isServer && found != -1)
         {
             Debug.Log("Player " +player.playerID + " already added! Now we have " + peers.Count + " peers in the room!");
-            // Debug.Log("connectionID :" + connectionID);
-            // Debug.Log("peers[connectionID].IP :" + peers[connectionID].IP);
-            // Debug.Log("peers[connectionID].port :" + peers[connectionID].port);
-            // Debug.Log("player.port :" + player.port);
             Debug.Assert(!isServer || peers[connectionID].IP == player.IP);
             Debug.Assert(!isServer || peers[connectionID].port == player.port);  
             return false;
+        } else if (!isServer && found != -1)
+        {
+            peers[found].connectionID = connectionID;
+            Debug.Log("Update Player " +player.playerID + " connectionID to " + connectionID);
+            return false;
         }
 
-        Debug.Assert(!isServer || connectionID == peers.Count);
-        // player.prefab = playerManager.SpawnKart();
         peers.Add(player);
         Debug.Log("Player " +player.playerID + " joined! Now we have " + peers.Count + " peers in the room!");
         return true;
