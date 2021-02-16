@@ -46,6 +46,7 @@ public class KartServer : MonoBehaviour {
     public List<Player> peers = new List<Player>(MAX_CONNECTION);
 
     public PlayerManager playerManager;
+    public bool onBattleScene = false;
 
     private void Start() {
         // network init and config
@@ -211,7 +212,8 @@ public class KartServer : MonoBehaviour {
                 }
                 break;
             case "PosInfo":
-                playerManager.UpdatePosition(packet.playerID, packet.playerPosition, packet.playerRotation);
+                if (onBattleScene)
+                    playerManager.UpdatePosition(packet.playerID, packet.playerPosition, packet.playerRotation);
                 break;
         }
     }
@@ -305,7 +307,7 @@ public class KartServer : MonoBehaviour {
     {
         Player player = new Player();
         player.playerID = packet.playerID;
-        if (!isServer && peers.Count > 2) {
+        if (!isServer && peers.Count >= 2) {
             player.connectionID = -1;
         } else {
             player.connectionID = connectionID;
@@ -313,7 +315,6 @@ public class KartServer : MonoBehaviour {
         string[] subs = packet.info.Split('|');
         player.IP = subs[0];
         player.port = int.Parse(subs[1]);
-
         int found = findPlayer(player);
         
         if (isServer && found != -1)
