@@ -30,9 +30,12 @@ public class PlayerManager : MonoBehaviour
         //player prefab
         myPlayer.prefab = Instantiate(kartPrefab);
         myPlayer.prefab.GetComponent<CarController>().enabled = true;
+        myPlayer.prefab.GetComponent<TextMesh>().text = myPlayer.playerID;
+
         // peer prefab
         for (int i = 1; i < kartServer.peers.Count; i++) {
             kartServer.peers[i].prefab = Instantiate(kartPrefab);
+            kartServer.peers[i].prefab.GetComponent<TextMesh>().text = kartServer.peers[i].playerID;
         }
         kartServer.connectToPeers();
     }

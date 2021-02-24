@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Networking;
+using UnityEditor;
 
 /**
     code from : https://www.youtube.com/watch?v=qGkkaNkq8co
@@ -27,8 +28,15 @@ public class Player
 
 public class KartServer : MonoBehaviour {
 
+    // for NAT punchthrough
+    // turn off when testing locally
+    public const bool useNAT = true; 
+    NATHelper natHelper;
+    string hostExternalIP, hostInternalIP;
+    string serverIP;
+    GameObject canvas;
     private const int MAX_CONNECTION = 4;
-    private const int serverPort = 8888;
+    private int serverPort = 8888;
     private int clientPort;
 
     private int myHostId;
@@ -49,6 +57,12 @@ public class KartServer : MonoBehaviour {
     public bool onBattleScene = false;
 
     private void Start() {
+
+        // connect to NAT server before we activate canvas
+        natHelper = GetComponent<NATHelper>();
+        canvas = GameObject.Find("Canvas");
+        canvas.SetActive(natHelper.isReady);
+
         // network init and config
         NetworkTransport.Init();
         cc =  new ConnectionConfig();
@@ -56,7 +70,86 @@ public class KartServer : MonoBehaviour {
         unreliableChannel = cc.AddChannel(QosType.Unreliable);
         topo = new HostTopology(cc, MAX_CONNECTION);
         // playerManager =  GameObject.Find("Player").GetComponent<PlayerManager>();
+        
     }
+
+#region NAT setup
+    public void OnStartNAT() {
+        natHelper.startListeningForPunchthrough(OnHolePunchedServer);
+    }
+
+    public void OnConnectNAT() {
+        if (natHelper.targetGUID == "") {
+            natHelper.targetGUID = GameObject.Find("guidID").GetComponent<InputField>().text;
+        }
+        natHelper.punchThroughToServer(natHelper.targetGUID, OnHolePunchedClient);
+    }
+
+    /**
+     * Server received a hole punch from a client
+     * Start up a new NATServer listening on the newly punched hole
+     */
+    void OnHolePunchedServer(int natListenPort)
+    {
+        // NATServer newServer = new NATServer();
+        // bool isListening = newServer.Listen(natListenPort, NetworkServer.hostTopology);
+        // if (isListening)
+        // {
+        //     natServers.Add(newServer);
+        // }
+        // TODO : CREATE NEW SERVER FOR EACH PUNCHED PORT?
+        serverPort = natListenPort;
+        OnStartHost();
+    }
+
+        void OnHolePunchedClient(int natListenPort, int natConnectPort, string serverAddress)
+    {
+        // The port on the server that we are connecting to
+        int networkPort = natConnectPort;
+
+        // Make sure to connect to the correct IP or things won't work
+        // if (hostExternalIP == natHelper.externalIP)
+        // {
+        //     if (hostInternalIP == Network.player.ipAddress)
+        //     {
+        //         // Host is running on the same computer as client, two separate builds
+        //         networkAddress = "127.0.0.1";
+        //     }
+        //     else
+        //     {
+        //         // Host is on the same local network as client
+        //         networkAddress = hostInternalIP;
+        //     }
+        // }
+        // else
+        // {
+        //     // Host is somewhere out on the internet
+        //     networkAddress = hostExternalIP;
+        // }
+        
+        // Debug.Log("Attempting to connect to server " + networkAddress + ":" + networkPort);
+        Debug.Log("Attempting to connect to server " + ":" + networkPort);
+
+        // reset network configuration
+        clientPort = natListenPort;
+        serverPort = networkPort;
+        serverIP = serverAddress;
+        Connect();
+        // Magic! Set the client's transport level host ID so that the client will use
+        // the host we just started above instead of the one it creates internally when we call Connect.
+        // This has to be done so that the connection will be made from the correct port, otherwise
+        // Unity will use a random port to connect from and NAT Punchthrough will fail.
+        // This is the shit that keeps me up at night.
+        // clientIDField.SetValue(client, natListenSocketID);
+
+        // // Tell Unity to use the client we just created as _the_ client so that OnClientConnect will be called
+        // // and all the other HLAPI stuff just works. Oh god, so nice.
+        // UseExternalClient(client);
+    }
+
+# endregion
+
+#region plain server-client setup
 
     /**
         function connected to StartGame button in the Lobby scene
@@ -67,7 +160,9 @@ public class KartServer : MonoBehaviour {
             return;
 
         isServer = true;
-        myPlayerID = "host"; // TODO: custom hostID
+        // myPlayerID = "host"; // TODO: custom hostID
+
+        myPlayerID = GameObject.Find("PlayerName").GetComponent<InputField>().text;
         myHostId = NetworkTransport.AddHost(topo, serverPort);
         Debug.Log ("Socket Open. hostId is: " + myHostId);
         
@@ -92,12 +187,15 @@ public class KartServer : MonoBehaviour {
             return;
         }
             
-        string t = GameObject.Find("PortNum").GetComponent<InputField>().text;
-        if (t == "") {
-            Debug.Log ("Missing port number. No connection.");
-            return;
+        if (!useNAT)
+        {
+            string t = GameObject.Find("PortNum").GetComponent<InputField>().text;
+            if (t == "") {
+                Debug.Log ("Missing port number. No connection.");
+                return;
+            }
+            clientPort = int.Parse(t);
         }
-        clientPort = int.Parse(t);
 
         myPlayerID = GameObject.Find("PlayerName").GetComponent<InputField>().text;
         if (myPlayerID == "") {
@@ -106,22 +204,37 @@ public class KartServer : MonoBehaviour {
         }
 
         myHostId = NetworkTransport.AddHost(topo, clientPort);// "127.0.0.1:clientPort";
-        serverConnectionId = NetworkTransport.Connect(myHostId, "127.0.0.1", serverPort, 0, out error);
+        serverConnectionId = NetworkTransport.Connect(myHostId, serverIP, serverPort, 0, out error);
         Debug.Log("connect(hostId = " + myHostId + ", connectionId = "+ serverConnectionId + ", error = " + error.ToString() + ")");
         
         // oneself is the first peer in the network, so we add to peers
         Player hostPlayer = new Player();
         hostPlayer.playerID = myPlayerID; 
-        hostPlayer.IP = "127.0.0.1"; // TODO: change this for nonlocal test
+        hostPlayer.IP = "127.0.0.1"; // TODO: change this for nonlocal test? not sure do we stil use this address over NAT
         hostPlayer.port = clientPort;
         hostPlayer.connectionID = 0;
         peers.Add(hostPlayer);
 
-        isStarted = true;    
-    }
+        isStarted = true;
 
+        #if UNITY_EDITOR  //not work
+            EditorUtility.DisplayDialog("Tip", "You have been connected!", "OK", ""); 
+        #endif   
+    }
+#endregion
     private void Update()
     {        
+        if (natHelper.isReady && !onBattleScene){
+            canvas.SetActive(natHelper.isReady);
+            GameObject.Find("guidText").GetComponent<Text>().text = natHelper.guid;
+            // GameObject.Find("guidText").GetComponent<Text>().fontSize = 30;
+            // text.text = natHelper.guid;
+            // Font ArialFont = (Font)Resources.GetBuiltinResource(typeof(Font), "Arial.ttf");
+            // text.font = ArialFont;
+            // text.material = ArialFont.material;
+        }
+            
+
         if (!isStarted) {
             return;
         }
