@@ -61,19 +61,59 @@ public class PlayerManager : MonoBehaviour
         }
     }
 
-    public void UpdatePosition(string playerID, Vector3 position, Vector3 rotation)
+    IEnumerator LerpPosition(string playerID, Vector3 targetPosition, Vector3 targetRotation, float duration)
     {
-        for (int i = 0; i < kartServer.peers.Count; i++) // TODO: use connectionID as index to update prefab position
+        for (int i = 1; i < kartServer.peers.Count; i++) // TODO: use connectionID as index to update prefab position
         {
             if (kartServer.peers[i].playerID == playerID) 
             {
-                //update using interpolation
-                // kartServer.peers[i].prefab.transform.position = Vector3.Lerp (kartServer.peers[i].prefab.transform.position, position, 0.5F);
-                kartServer.peers[i].prefab.transform.position = position;
-                kartServer.peers[i].prefab.transform.eulerAngles = rotation;
-                return;
+               float time = 0;
+               Vector3 startPosition = kartServer.peers[i].prefab.transform.position;
+               UnityEngine.Quaternion startRotationQ = kartServer.peers[i].prefab.transform.rotation;
+               UnityEngine.Quaternion targetRotationQ = Quaternion.Euler(targetRotation.x, targetRotation.y, targetRotation.z);
+
+                while (time < duration)
+                {
+                    kartServer.peers[i].prefab.transform.position = Vector3.Lerp(startPosition, targetPosition, time / duration);
+                    kartServer.peers[i].prefab.transform.rotation = Quaternion.Lerp(startRotationQ, targetRotationQ, time / duration);
+                    time += Time.deltaTime;
+                    yield return null;
+                }
+                kartServer.peers[i].prefab.transform.position = targetPosition;
+                kartServer.peers[i].prefab.transform.rotation = targetRotationQ;
             }
         }
+    }
+
+    void UpdatePosition() {
+        for (int i = 1; i < kartServer.peers.Count; i++)
+        {
+            if (Vector3.Distance(kartServer.peers[i].prefab.transform.position, kartServer.peers[i].targetPosition)>.05)
+            {
+                kartServer.peers[i].prefab.transform.position = Vector3.Lerp (kartServer.peers[i].prefab.transform.position, kartServer.peers[i].targetPosition, 0.1F);
+                kartServer.peers[i].prefab.transform.rotation = Quaternion.Lerp(kartServer.peers[i].prefab.transform.rotation, Quaternion.Euler(kartServer.peers[i].targetRotation.x, kartServer.peers[i].targetRotation.y, kartServer.peers[i].targetRotation.z), 0.1F);
+            } else {
+                kartServer.peers[i].prefab.transform.position = kartServer.peers[i].targetPosition;
+                kartServer.peers[i].prefab.transform.rotation =  Quaternion.Euler(kartServer.peers[i].targetRotation.x, kartServer.peers[i].targetRotation.y, kartServer.peers[i].targetRotation.z);
+            }
+        }
+    }
+
+    public void UpdatePosition(string playerID, Vector3 position, Vector3 rotation)
+    {
+        //update using interpolation, instead of update the position immediately, we save the target value and update with interpolation
+        StartCoroutine(LerpPosition(playerID, position, rotation, (float)0.2));
+        // for (int i = 1; i < kartServer.peers.Count; i++) // TODO: use connectionID as index to update prefab position
+        // {
+        //     if (kartServer.peers[i].playerID == playerID) 
+        //     {
+        //         // update without interpolation 
+        //         kartServer.peers[i].prefab.transform.position = position;
+        //         kartServer.peers[i].prefab.transform.rotation = Quaternion.Euler(rotation.x, rotation.y, rotation.z);
+
+        //         return;
+        //     }
+        // }
     }
 
     public GameObject SpawnKart()

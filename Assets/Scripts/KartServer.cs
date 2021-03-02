@@ -24,16 +24,20 @@ public class Player
     public int connectionID; 
     // GameObject
     public GameObject prefab;
+
+    // information used in interpolation
+    public Vector3 targetPosition;
+    public Vector3 targetRotation;
 };
 
 public class KartServer : MonoBehaviour {
 
     // for NAT punchthrough
     // turn off when testing locally
-    public const bool useNAT = true; 
+    public bool useNAT = false; 
     NATHelper natHelper;
     string hostExternalIP, hostInternalIP;
-    string serverIP;
+    string serverIP = "127.0.0.1";
     GameObject canvas;
     private const int MAX_CONNECTION = 4;
     private int serverPort = 8888;
@@ -61,7 +65,12 @@ public class KartServer : MonoBehaviour {
         // connect to NAT server before we activate canvas
         natHelper = GetComponent<NATHelper>();
         canvas = GameObject.Find("Canvas");
-        canvas.SetActive(natHelper.isReady);
+        if (useNAT) {
+            canvas.SetActive(natHelper.isReady);
+        } else {
+            natHelper.isReady = true;
+        }
+       
 
         // network init and config
         NetworkTransport.Init();
@@ -72,6 +81,26 @@ public class KartServer : MonoBehaviour {
         // playerManager =  GameObject.Find("Player").GetComponent<PlayerManager>();
         
     }
+
+#region button control
+
+    public void OnStartBtn() {
+        if (useNAT) {
+            OnStartNAT();
+        } else {
+            OnStartHost();
+        }
+    }
+
+    public void OnConnectBtn() {
+        if (useNAT) {
+            OnConnectNAT();
+        } else {
+            Connect();
+        }
+    }
+
+# endregion
 
 #region NAT setup
     public void OnStartNAT() {
@@ -127,8 +156,8 @@ public class KartServer : MonoBehaviour {
         //     networkAddress = hostExternalIP;
         // }
         
-        // Debug.Log("Attempting to connect to server " + networkAddress + ":" + networkPort);
-        Debug.Log("Attempting to connect to server " + ":" + networkPort);
+        Debug.Log("Attempting to connect to server " + serverAddress + ":" + networkPort);
+        // Debug.Log("Attempting to connect to server " + ":" + networkPort);
 
         // reset network configuration
         clientPort = natListenPort;
@@ -163,8 +192,10 @@ public class KartServer : MonoBehaviour {
         // myPlayerID = "host"; // TODO: custom hostID
 
         myPlayerID = GameObject.Find("PlayerName").GetComponent<InputField>().text;
-        myHostId = NetworkTransport.AddHost(topo, serverPort);
+
+        myHostId = NetworkTransport.AddHost(topo, serverPort,"127.0.0.1");
         Debug.Log ("Socket Open. hostId is: " + myHostId);
+        Debug.Log ("serverPort: " + serverPort);
         
         // Host is the first peer in the network, so we add host to peers
         clientPort = serverPort;
@@ -203,8 +234,9 @@ public class KartServer : MonoBehaviour {
             return;
         }
 
-        myHostId = NetworkTransport.AddHost(topo, clientPort);// "127.0.0.1:clientPort";
+        myHostId = NetworkTransport.AddHost(topo, clientPort, "0.0.0.0");// "127.0.0.1:clientPort";
         serverConnectionId = NetworkTransport.Connect(myHostId, serverIP, serverPort, 0, out error);
+        Debug.Log("serverIP = " + serverIP + ", serverPort = "+ serverPort);
         Debug.Log("connect(hostId = " + myHostId + ", connectionId = "+ serverConnectionId + ", error = " + error.ToString() + ")");
         
         // oneself is the first peer in the network, so we add to peers
@@ -400,9 +432,10 @@ public class KartServer : MonoBehaviour {
         packet.playerPosition.x = trans.position.x;
         packet.playerPosition.y = trans.position.y;
         packet.playerPosition.z = trans.position.z;
+        
         packet.playerRotation.x = trans.eulerAngles.x;
-        packet.playerRotation.y = trans.eulerAngles.y;
-        packet.playerRotation.z = trans.eulerAngles.z;
+        packet.playerRotation.y = trans.eulerAngles.y;//trans.eulerAngles.y;
+        packet.playerRotation.z = trans.eulerAngles.z;//trans.eulerAngles.z;
         return packet;
     }
 
