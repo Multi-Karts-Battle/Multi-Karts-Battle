@@ -5,13 +5,19 @@ using UnityEngine.UI;
 
 public class Health : MonoBehaviour
 {
-    public int health;
-    public int numOfHearts;
+    public int health = 5;
+    public int numOfHearts = 5;
     
-    public Image[] hearts;
+    public Image[] hearts = new Image[5];
     public Sprite fullHeart;
     public Sprite emptyHeart;
 
+    void Start() {
+        GameObject[] g = GameObject.FindGameObjectsWithTag("hearts");
+        for (int i = 0; i < 5; i++) {
+            hearts[i] = g[i].GetComponent<Image>();
+        }
+    }
     void Update(){
 
         if(health > numOfHearts){
