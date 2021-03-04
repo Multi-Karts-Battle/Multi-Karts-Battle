@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 2297025699849543156}
   - component: {fileID: 2297025699848445748}
   - component: {fileID: 2297025699846539089}
+  - component: {fileID: 8661020436512854153}
+  - component: {fileID: 1127207906555770118}
   m_Layer: 0
   m_Name: Stopwatch
   m_TagString: Untagged
@@ -94,3 +96,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RotateSpeed: 50
   DestroyTime: 5
+--- !u!114 &8661020436512854153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2297025699846439412}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac1fa4d84bd319643a2649f09c4a12a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameObject: {fileID: 2297025699846439412}
+--- !u!135 &1127207906555770118
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2297025699846439412}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 1
+  m_Center: {x: 0, y: 0.5, z: 0.010127716}

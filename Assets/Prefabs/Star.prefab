@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 7263130534174477234}
   - component: {fileID: 7263130534175443314}
   - component: {fileID: 7263130534177476881}
+  - component: {fileID: 8890343873817059601}
+  - component: {fileID: 5872138894645493195}
   m_Layer: 0
   m_Name: Star
   m_TagString: Untagged
@@ -95,3 +97,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RotateSpeed: 50
   DestroyTime: 5
+--- !u!114 &8890343873817059601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7263130534177445810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac1fa4d84bd319643a2649f09c4a12a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameObject: {fileID: 7263130534177445810}
+--- !u!135 &5872138894645493195
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7263130534177445810}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 1
+  m_Center: {x: -0.00000037252903, y: 0.47467917, z: 0.000000037252903}
