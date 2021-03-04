@@ -24,7 +24,10 @@ public class Health : MonoBehaviour
             health = numOfHearts;
         }
         
+        Debug.Log("health:" + health);
         for (int i = 0; i < hearts.Length; i++){
+            Debug.Log(i);
+            Debug.Log(hearts[i].sprite);
             if(i < health){
                 hearts[i].sprite = fullHeart;
             } else {
@@ -35,7 +38,7 @@ public class Health : MonoBehaviour
             } else {
                 hearts[i].enabled = false;
             }
-
+            Debug.Log(hearts[i].sprite);
         }
     }
 }

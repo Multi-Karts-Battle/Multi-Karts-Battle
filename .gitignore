@@ -11,7 +11,7 @@
 /[Mm]emoryCaptures/
 
 # Asset meta data should only be ignored when the corresponding asset is also ignored
-!/[Aa]ssets/**/*.meta
+#!/[Aa]ssets/**/*.meta
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*
@@ -45,14 +45,14 @@ ExportedObj/
 .vscode
 
 # Unity3D generated meta files
-*.pidb.meta
-*.pdb.meta
-*.mdb.meta
-*.png.meta
+#*.pidb.meta
+#*.pdb.meta
+#*.mdb.meta
+#*.png.meta
 *.cs.meta
-*.jpg.meta
-*.fbx.meta
-*.exr.meta
+##*.jpg.meta
+##*.fbx.meta
+##*.exr.meta
 
 # Unity3D generated file on crash reports
 sysinfo.txt
